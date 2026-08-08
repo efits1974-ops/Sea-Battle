@@ -79,6 +79,7 @@
       background: #5f9eae;
       box-shadow: inset 0 -3px 0 #2e6b7a, 0 0 0 1px #79bccc;
     }
+    
     .cell.hit {
       background: #d94f4f !important;
       box-shadow: inset 0 -3px 0 #8f2a2a, 0 0 0 2px #ff7a7a !important;
@@ -95,6 +96,24 @@
       line-height: 1;
       text-shadow: 0 2px 3px #5a1a1a;
     }
+    
+    .cell.sunk {
+      background: #1a1a1a !important;
+      box-shadow: inset 0 -3px 0 #000000, 0 0 0 2px #444444 !important;
+      position: relative;
+    }
+    .cell.sunk::after {
+      content: "✕";
+      color: #888888;
+      font-size: 22px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      text-shadow: 0 2px 3px #000000;
+    }
+    
     .cell.miss {
       background: #2d5d6b !important;
       box-shadow: inset 0 -3px 0 #183e47, 0 0 0 1px #3d7b89 !important;
@@ -110,20 +129,7 @@
       line-height: 1;
       opacity: 0.8;
     }
-    .cell.sunk {
-      background: #b13e3e !important;
-      box-shadow: inset 0 -3px 0 #712626, 0 0 0 2px #ff5e5e !important;
-    }
-    .cell.sunk::after {
-      content: "✕";
-      color: white;
-      font-size: 22px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-shadow: 0 2px 3px #4d1818;
-    }
+    
     .cell.disabled {
       cursor: not-allowed;
       opacity: 0.7;
@@ -195,12 +201,10 @@
 <body>
 <div class="game-container">
   <div class="game-panel">
-    <!-- Игрок -->
     <div class="board-wrapper">
       <div class="board-title">🚢 Ваши корабли</div>
       <div class="grid" id="playerGrid"></div>
     </div>
-    <!-- Противник -->
     <div class="board-wrapper">
       <div class="board-title">⚓ Поле противника</div>
       <div class="grid" id="enemyGrid"></div>
@@ -215,17 +219,14 @@
 </div>
 <script>
   (function() {
-    // ---------- КОНФИГ ----------
     const SIZE = 10;
-    const SHIP_SIZES = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]; // 10 кораблей
+    const SHIP_SIZES = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1];
 
-    // ---------- СОСТОЯНИЕ ----------
-    let playerBoard = Array(SIZE).fill().map(() => Array(SIZE).fill(0)); // 0 - пусто, 1 - корабль
+    let playerBoard = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
     let enemyBoard = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
-    let playerHits = Array(SIZE).fill().map(() => Array(SIZE).fill(false)); // true = уже стреляли
+    let playerHits = Array(SIZE).fill().map(() => Array(SIZE).fill(false));
     let enemyHits = Array(SIZE).fill().map(() => Array(SIZE).fill(false));
-    // Для отображения попаданий/промахов на доске противника
-    let enemyReveal = Array(SIZE).fill().map(() => Array(SIZE).fill('')); // 'hit', 'miss', 'sunk'
+    let enemyReveal = Array(SIZE).fill().map(() => Array(SIZE).fill(''));
 
     let gameActive = false;
     let isPlayerTurn = true;
@@ -234,13 +235,11 @@
     let scorePlayer = 0;
     let scoreEnemy = 0;
 
-    // DOM
     const playerGridEl = document.getElementById('playerGrid');
     const enemyGridEl = document.getElementById('enemyGrid');
     const statusMsg = document.getElementById('statusMessage');
     const scoreDisplay = document.getElementById('scoreDisplay');
 
-    // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
     function createEmptyBoard() {
       return Array(SIZE).fill().map(() => Array(SIZE).fill(0));
     }
@@ -255,23 +254,20 @@
       enemyShipsAlive = 0;
       isPlayerTurn = true;
       gameActive = true;
-      // Счёт не сбрасываем, только при новой игре через кнопку
     }
 
-    // Проверка, можно ли разместить корабль
     function canPlaceShip(board, row, col, size, horizontal) {
       if (horizontal) {
         if (col + size > SIZE) return false;
         for (let i = 0; i < size; i++) {
           if (board[row][col + i] !== 0) return false;
         }
-        // Проверка соседей (включая диагонали)
         for (let i = -1; i <= size; i++) {
           for (let dr = -1; dr <= 1; dr++) {
             const r = row + dr;
             const c = col + i;
             if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) continue;
-            if (i >= 0 && i < size && dr === 0) continue; // сама клетка
+            if (i >= 0 && i < size && dr === 0) continue;
             if (board[r][c] !== 0) return false;
           }
         }
@@ -301,9 +297,8 @@
       }
     }
 
-    // Рандомная расстановка
     function randomPlaceShips(board) {
-      board = board.map(row => row.map(() => 0)); // очистка
+      board = board.map(row => row.map(() => 0));
       const ships = [...SHIP_SIZES];
       for (const size of ships) {
         let placed = false;
@@ -319,7 +314,6 @@
           attempts++;
         }
         if (!placed) {
-          // fallback: brute force
           for (let r = 0; r < SIZE; r++) {
             for (let c = 0; c < SIZE; c++) {
               if (canPlaceShip(board, r, c, size, true)) {
@@ -340,7 +334,6 @@
       return board;
     }
 
-    // Подсчёт живых кораблей (клеток с 1, не подбитых)
     function countAliveShips(board, hits) {
       let count = 0;
       for (let r = 0; r < SIZE; r++) {
@@ -351,10 +344,8 @@
       return count;
     }
 
-    // Проверка, потоплен ли корабль (все клетки 1 подбиты)
     function isShipSunk(board, hits, row, col) {
       if (board[row][col] !== 1) return false;
-      // BFS по кораблю
       const queue = [[row, col]];
       const visited = new Set();
       let allHit = true;
@@ -376,8 +367,47 @@
       return allHit && visited.size > 0;
     }
 
-    // Пометка потопленного корабля (для отображения)
-    function markSunk(board, hits, reveal, row, col) {
+    // НОВАЯ ФУНКЦИЯ: помечает все клетки вокруг корабля как "мимо"
+    function markSurroundingAsMiss(board, hits, reveal, row, col) {
+      const queue = [[row, col]];
+      const visited = new Set();
+      const shipCells = [];
+      
+      // Сначала находим все клетки корабля
+      while (queue.length > 0) {
+        const [r, c] = queue.shift();
+        const key = r * SIZE + c;
+        if (visited.has(key)) continue;
+        visited.add(key);
+        shipCells.push([r, c]);
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+        for (const [dr, dc] of dirs) {
+          const nr = r + dr, nc = c + dc;
+          if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
+          if (board[nr][nc] === 1 && !visited.has(nr * SIZE + nc)) {
+            queue.push([nr, nc]);
+          }
+        }
+      }
+
+      // Помечаем все клетки вокруг корабля как "мимо"
+      for (const [r, c] of shipCells) {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
+            // Если клетка пустая и ещё не отмечена
+            if (board[nr][nc] === 0 && !hits[nr][nc]) {
+              reveal[nr][nc] = 'miss';
+              hits[nr][nc] = true; // отмечаем как проверенную
+            }
+          }
+        }
+      }
+    }
+
+    function markShipAsSunk(board, hits, reveal, row, col) {
       const queue = [[row, col]];
       const visited = new Set();
       while (queue.length > 0) {
@@ -387,6 +417,7 @@
         visited.add(key);
         if (board[r][c] === 1) {
           reveal[r][c] = 'sunk';
+          hits[r][c] = true;
         }
         const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
         for (const [dr, dc] of dirs) {
@@ -397,32 +428,32 @@
           }
         }
       }
+      // После пометки корабля как потопленного, помечаем все клетки вокруг
+      markSurroundingAsMiss(board, hits, reveal, row, col);
     }
 
-    // ---------- ХОД ИГРОКА ----------
     function playerAttack(row, col) {
       if (!gameActive || !isPlayerTurn) return false;
       if (row < 0 || row >= SIZE || col < 0 || col >= SIZE) return false;
-      if (enemyHits[row][col]) return false; // уже стреляли
+      if (enemyHits[row][col]) return false;
 
-      // Совершаем выстрел
       enemyHits[row][col] = true;
       let hit = false;
       if (enemyBoard[row][col] === 1) {
         hit = true;
-        enemyReveal[row][col] = 'hit';
-        // Проверка потоплен ли корабль
         if (isShipSunk(enemyBoard, enemyHits, row, col)) {
-          markSunk(enemyBoard, enemyHits, enemyReveal, row, col);
-          // обновляем счёт (потоплен)
+          markShipAsSunk(enemyBoard, enemyHits, enemyReveal, row, col);
+          statusMsg.textContent = '💀 Корабль уничтожен! Все клетки вокруг помечены.';
+        } else {
+          enemyReveal[row][col] = 'hit';
+          statusMsg.textContent = '🔥 Попадание! Корабль ранен.';
         }
-        // обновляем кол-во живых
         enemyShipsAlive = countAliveShips(enemyBoard, enemyHits);
       } else {
         enemyReveal[row][col] = 'miss';
+        statusMsg.textContent = '💨 Промах! Ход переходит к компьютеру.';
       }
 
-      // Проверка победы
       if (enemyShipsAlive === 0) {
         gameActive = false;
         scorePlayer++;
@@ -433,31 +464,19 @@
       }
 
       if (!hit) {
-        // промах -> ход противника
         isPlayerTurn = false;
-        statusMsg.textContent = '🤖 Ход компьютера...';
         renderAll();
         setTimeout(() => enemyTurn(), 500);
       } else {
-        statusMsg.textContent = '🎯 Попадание! Ещё ход!';
         renderAll();
-        // Проверяем, потоплен ли был, и если да, то сообщение
-        if (enemyShipsAlive === 0) {
-          // уже обработано выше
-        } else {
-          // даём ещё ход игроку (isPlayerTurn остаётся true)
-        }
       }
-      renderAll();
       return true;
     }
 
-    // ---------- ХОД КОМПЬЮТЕРА (ИИ) ----------
     function enemyTurn() {
       if (!gameActive) return;
-      if (isPlayerTurn) return; // страховка
+      if (isPlayerTurn) return;
 
-      // ИИ: выбирает случайную непроверенную клетку
       const available = [];
       for (let r = 0; r < SIZE; r++) {
         for (let c = 0; c < SIZE; c++) {
@@ -470,18 +489,18 @@
       let hit = false;
       if (playerBoard[row][col] === 1) {
         hit = true;
-        // Проверяем потопление
         if (isShipSunk(playerBoard, playerHits, row, col)) {
-          // Потоплен! отметим все клетки корабля как sunk (для визуала)
+          // Для игрока тоже помечаем вокруг, но визуально только через hits
           const queue = [[row, col]];
           const visited = new Set();
+          const shipCells = [];
           while (queue.length > 0) {
             const [r, c] = queue.shift();
             const key = r * SIZE + c;
             if (visited.has(key)) continue;
             visited.add(key);
-            // Визуально показываем потопление через класс (но у нас нет отдельной таблицы для игрока)
-            // Будем использовать playerHits и отрисовку
+            shipCells.push([r, c]);
+            playerHits[r][c] = true;
             const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
             for (const [dr, dc] of dirs) {
               const nr = r + dr, nc = c + dc;
@@ -491,8 +510,26 @@
               }
             }
           }
+          // Помечаем клетки вокруг корабля игрока как "мимо"
+          for (const [r, c] of shipCells) {
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const nr = r + dr;
+                const nc = c + dc;
+                if (nr < 0 || nr >= SIZE || nc < 0 || nc >= SIZE) continue;
+                if (playerBoard[nr][nc] === 0 && !playerHits[nr][nc]) {
+                  playerHits[nr][nc] = true; // отмечаем как проверенную (мимо)
+                }
+              }
+            }
+          }
+          statusMsg.textContent = '💀 Компьютер уничтожил ваш корабль!';
+        } else {
+          statusMsg.textContent = '🔥 Компьютер ранил ваш корабль!';
         }
         playerShipsAlive = countAliveShips(playerBoard, playerHits);
+      } else {
+        statusMsg.textContent = '💨 Компьютер промахнулся! Ваш ход.';
       }
 
       if (playerShipsAlive === 0) {
@@ -505,19 +542,15 @@
       }
 
       if (hit) {
-        // Если попал, ходит ещё раз
         isPlayerTurn = false;
-        statusMsg.textContent = '🤖 Компьютер попал! Ходит снова...';
         renderAll();
-        setTimeout(() => enemyTurn(), 400);
+        setTimeout(() => enemyTurn(), 500);
       } else {
         isPlayerTurn = true;
-        statusMsg.textContent = '🎯 Ваш ход!';
         renderAll();
       }
     }
 
-    // ---------- ОТРИСОВКА ----------
     function renderGrid(board, hits, reveal, container, isPlayer) {
       container.innerHTML = '';
       for (let r = 0; r < SIZE; r++) {
@@ -530,24 +563,22 @@
           const isHit = hits[r][c];
           const hasShip = board[r][c] === 1;
           let isSunk = false;
-          let isMiss = false;
           let isHitCell = false;
+          let isMiss = false;
 
           if (!isPlayer) {
-            // Для вражеской доски используем reveal
             const state = reveal[r][c];
-            if (state === 'hit' || state === 'sunk') {
+            if (state === 'hit') {
               isHitCell = true;
-              if (state === 'sunk') isSunk = true;
+            } else if (state === 'sunk') {
+              isSunk = true;
+              isHitCell = true;
             } else if (state === 'miss') {
               isMiss = true;
             }
           } else {
-            // Для игрока показываем корабли и попадания/промахи
             if (isHit) {
               if (hasShip) {
-                isHitCell = true;
-                // Проверка потоплен ли (все клетки корабля подбиты)
                 if (isShipSunk(board, hits, r, c)) {
                   isSunk = true;
                 } else {
@@ -567,12 +598,8 @@
             cell.classList.add('miss');
           } else if (hasShip && isPlayer) {
             cell.classList.add('ship', 'player-ship');
-          } else if (hasShip && !isPlayer && !isHit) {
-            // скрываем корабли противника
-            // ничего не добавляем
           }
 
-          // Событие клика только для вражеской доски и если активна игра и ход игрока
           if (!isPlayer && gameActive && isPlayerTurn && !hits[r][c]) {
             cell.style.cursor = 'pointer';
             cell.addEventListener('click', (function(row, col) {
@@ -594,24 +621,16 @@
     function renderAll() {
       renderGrid(playerBoard, playerHits, null, playerGridEl, true);
       renderGrid(enemyBoard, enemyHits, enemyReveal, enemyGridEl, false);
-      // обновляем статус если игра не активна
-      if (!gameActive && statusMsg.textContent.indexOf('Новая') === -1) {
-        // если игра завершена, но сообщение уже установлено
-      }
     }
 
     function updateScore() {
       scoreDisplay.textContent = `⚔️ ${scorePlayer} : ${scoreEnemy}`;
     }
 
-    // ---------- НОВАЯ ИГРА ----------
     function newGame() {
-      // Сброс всех данных, расстановка
       resetGameState();
-      // Расставляем корабли
       playerBoard = randomPlaceShips(playerBoard);
       enemyBoard = randomPlaceShips(enemyBoard);
-      // Инициализация hits
       playerHits = Array(SIZE).fill().map(() => Array(SIZE).fill(false));
       enemyHits = Array(SIZE).fill().map(() => Array(SIZE).fill(false));
       enemyReveal = Array(SIZE).fill().map(() => Array(SIZE).fill(''));
@@ -624,17 +643,11 @@
       updateScore();
     }
 
-    // ---------- ИНИЦИАЛИЗАЦИЯ ----------
     document.getElementById('newGameBtn').addEventListener('click', function() {
       newGame();
     });
 
-    // Старт игры
-    (function init() {
-      // Первая игра
-      newGame();
-    })();
-
+    newGame();
   })();
 </script>
 </body>
